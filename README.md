@@ -1,3 +1,2 @@
-# AuthorizationService
-OpenAPI for auth service
-Auth service for all
+# Authorization service
+[![linting: pylint](https://img.shields.io/badge/linting-pylint-yellowgreen)](https://github.com/PyCQA/pylint)
