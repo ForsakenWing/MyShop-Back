@@ -21,4 +21,5 @@ jobs:
         pip install -r dependencies/requirements.txt
     - name: Analysing the code with pylint
       run: |
-        pylint application
+        pylint application --rcfile=dependencies/app.pylintrc
+        pylint tests --rcfile=dependencies/tests.pylintrc
