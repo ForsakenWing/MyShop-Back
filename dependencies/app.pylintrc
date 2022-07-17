@@ -12,7 +12,7 @@ ignore=CVS,
 # Add files or directories matching the regex patterns to the blacklist. The
 # regex matches against base names, not paths.
 ignore-patterns=test_\w+.py
-
+ignore-paths=^databases/.*$,
 # Python code to execute, usually for sys.path manipulation such as
 # pygtk.require().
 #init-hook=
@@ -61,7 +61,11 @@ confidence=
 # no Warning level messages displayed, use "--disable=all --enable=classes
 # --disable=W".
 disable=C0114,
-        C0116
+        C0116,
+        C0115,
+        R0903,
+        E0611,
+        R1710
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
 # multiple time (only on the command line, not in the configuration file where
