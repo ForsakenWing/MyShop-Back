@@ -1,2 +1,2 @@
-from models import Postgres
-from schemas import UserAuth, UserReg
+from .models import Postgres
+from .schemas import UserAuth, UserReg

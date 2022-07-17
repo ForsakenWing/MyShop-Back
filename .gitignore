@@ -81,6 +81,10 @@ target/
 profile_default/
 ipython_config.py
 
+# RealConfigs
+database.ini
+v1.ini
+
 # pyenv
 .python-version
 .idea/

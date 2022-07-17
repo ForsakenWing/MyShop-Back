@@ -3,7 +3,7 @@ import logging
 
 import psycopg2
 
-from core.config import config
+from config import cfgparser
 
 
 class DataBase:
@@ -21,7 +21,7 @@ class PostgresExtension:
     def connector(func):
         @functools.wraps(func)
         def wrapper(query, *args, **kwargs):
-            parser = config()
+            parser = cfgparser()
             conn = None
             try:
                 conn: psycopg2._psycopg.connection = psycopg2.connect(**parser)
