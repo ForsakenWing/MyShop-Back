@@ -21,5 +21,10 @@ jobs:
         pip install -r dependencies/requirements.txt
     - name: Analysing the code with pylint
       run: |
+<<<<<<< HEAD
         pylint v1 --rcfile=dependencies/app.pylintrc
         pylint tests --rcfile=dependencies/tests.pylintrc
+=======
+        pylint application --rcfile=dependencies/app.pylintrc --fail-under=7
+        pylint tests --rcfile=dependencies/tests.pylintrc --fail-under=8
+>>>>>>> ZS-2-authorization-through-api
