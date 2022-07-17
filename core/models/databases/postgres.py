@@ -1,11 +1,21 @@
-from databases.config import config
-from databases.db import DataBase
-import psycopg2
-import logging
 import functools
+import logging
+
+import psycopg2
+
+from core.config import config
 
 
-class Postgres(DataBase):
+class DataBase:
+    __instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls.__instance is None:
+            cls.__instance = super().__new__(cls, *args, **kwargs)
+        return cls.__instance
+
+
+class PostgresExtension:
 
     @staticmethod
     def connector(func):
@@ -26,28 +36,21 @@ class Postgres(DataBase):
             finally:
                 conn.close()
             return result
+
         return wrapper
 
 
-class BaseUser:
+class Postgres(DataBase):
 
     @staticmethod
-    @Postgres.connector
-    def write(query, cursor: psycopg2._psycopg.cursor = None, *args, **kwargs):
+    @PostgresExtension.connector
+    def execute(query, *args, cursor: psycopg2._psycopg.cursor = None, **kwargs):
+        if args or kwargs:
+            ...
         try:
             cursor.execute(query)
         except psycopg2.DatabaseError:
             logging.error("Error while executing this query")
         else:
             logging.info("Query was successfully executed")
-
-    @staticmethod
-    @Postgres.connector
-    def read(query, cursor: psycopg2._psycopg.cursor = None, *args, **kwargs):
-        try:
-            cursor.execute(query)
-        except psycopg2.DatabaseError:
-            logging.error("Error while executing this query")
-        else:
-            logging.info("Query was successfully executed")
-            return cursor.fetchone()
+            return cursor.fetchall()
