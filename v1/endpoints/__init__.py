@@ -1,2 +1,2 @@
 from .token import token
-from .users import users
+from .user import user

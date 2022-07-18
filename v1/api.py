@@ -1,5 +1,5 @@
 from fastapi import APIRouter, FastAPI
-from .endpoints import users, token
+from .endpoints import user, token
 
 app = FastAPI()
 
@@ -12,6 +12,6 @@ v1 = APIRouter(
 )
 
 v1.include_router(token)
-v1.include_router(users)
+v1.include_router(user)
 api.include_router(v1)
 app.include_router(api)

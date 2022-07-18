@@ -1,10 +1,10 @@
 from fastapi import APIRouter
 
-users = APIRouter(
-    prefix="/users"
+user = APIRouter(
+    prefix="/user"
 )
 
 
-@users.post('/create')
+@user.post('/create')
 async def create_user():
     return {"Status": "Fail"}
