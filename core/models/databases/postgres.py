@@ -1,9 +1,13 @@
 import functools
 import logging
+from typing import Union
 
 import psycopg2
+from psycopg2.extras import DictCursor
+from pydantic import PositiveInt, EmailStr
 
 from config import cfgparser
+from core.schemas.user import username
 
 
 class DataBase:
@@ -30,8 +34,8 @@ class PostgresExtension:
                 logging.error("Database connection error")
                 raise
             else:
-                cursor: psycopg2._psycopg.cursor = conn.cursor()
-                result = func(query, cursor, *args, **kwargs)
+                cursor: psycopg2._psycopg.cursor = conn.cursor(cursor_factory=DictCursor)
+                result = func(query, *args, cursor=cursor, **kwargs)
                 conn.commit()
             finally:
                 conn.close()
@@ -44,28 +48,61 @@ class Postgres(DataBase):
 
     @staticmethod
     @PostgresExtension.connector
-    def execute(query, *args, cursor: psycopg2._psycopg.cursor = None, **kwargs):
+    def _execute(
+            query,
+            *args,
+            cursor: psycopg2._psycopg.cursor = None,
+            fetch_one: bool = False,
+            fetch_all: bool = False,
+            fetch_many: PositiveInt = False,
+            **kwargs
+    ):
         if args or kwargs:
             ...
         try:
             cursor.execute(query)
-        except psycopg2.DatabaseError:
+        except psycopg2.DatabaseError as err:
+            print(err)
             logging.error("Error while executing this query")
         else:
             logging.info("Query was successfully executed")
-            return cursor.fetchall()
+            if fetch_one:
+                return cursor.fetchone()
+            elif fetch_all:
+                return cursor.fetchall()
+            elif fetch_many:
+                return cursor.fetchmany(fetch_many)
 
-    # Re-check
-    # @classmethod
-    # def create_tables(cls):
-    #     cls.execute(
-    #         '''
-    #         CREATE TABLE [IF NOT EXISTS] accounts (
-    #         user_id serial PRIMARY KEY,
-    #         username VARCHAR ( 50 ) UNIQUE NOT NULL,
-    #         password VARCHAR ( 50 ) NOT NULL,
-    #         email VARCHAR ( 255 ) UNIQUE NOT NULL,
-    #         created_on TIMESTAMP NOT NULL,
-    #         last_login TIMESTAMP );
-    #         '''
-    #     )
+    @classmethod
+    def create_tables(cls):
+        cls._execute(
+            '''
+            CREATE TABLE IF NOT EXISTS accounts (
+            user_id serial PRIMARY KEY,
+            username VARCHAR ( 100 ) UNIQUE NOT NULL,
+            password VARCHAR ( 500 ) NOT NULL,
+            email VARCHAR ( 255 ) UNIQUE NOT NULL,
+            first_name VARCHAR (150),
+            last_name VARCHAR (150),
+            date_of_birth DATE,
+            active BOOLEAN DEFAULT TRUE, 
+            created_on TIMESTAMPTZ NOT NULL DEFAULT CURRENT_DATE,
+            last_login TIMESTAMPTZ,
+            updated_at TIMESTAMPTZ DEFAULT CURRENT_DATE);
+            '''.strip()
+        )
+
+    def select_user_from_table_accounts(self, login: Union[username, EmailStr]):
+        result = self._execute(
+            f"""
+            SELECT username, password, email, first_name, last_name, date_of_birth FROM accounts 
+            WHERE username = '{login}' OR email = '{login}'
+            """,
+            fetch_one=True
+        )
+        return result
+
+
+def get_user_from_db_by_login(db: Postgres, login: Union[username, EmailStr]) -> psycopg2._psycopg.cursor.fetchone:
+    result = db.select_user_from_table_accounts(login)
+    return dict(result) if result else None

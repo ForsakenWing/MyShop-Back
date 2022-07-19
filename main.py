@@ -1,5 +1,9 @@
+from uvicorn import run
+from core import Postgres
+
+
 def main():
-    from uvicorn import run
+    Postgres.create_tables()
     run(
         app="v1.api:app",
         host="localhost",
