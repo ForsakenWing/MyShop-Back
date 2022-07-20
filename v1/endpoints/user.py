@@ -1,14 +1,17 @@
 from datetime import datetime, timedelta
 from typing import Union
 
-from fastapi import APIRouter, Depends, HTTPException, status
+import aiohttp
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import EmailStr
 
 from config import cfgparser
-from core import Postgres, User, UserInDB, Token, username, TokenData
+from core import Postgres, User, UserInDB, Token, username, TokenData, APIRouter
+from core import delete_user_from_db_by_login, insert_user_to_db, UserReg, Status, Data
+from core import post_async
 
 user = APIRouter(
     prefix="/user"
@@ -97,7 +100,52 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
+me = APIRouter(
+    prefix="/me",
+    redirect_slashes=True
+)
 
-@user.get("/users/me/", response_model=User)
-async def read_users_me(current_user: User = Depends(get_current_active_user)):
+
+@me.get("/", response_model=User)
+async def get_user_data(current_user: User = Depends(get_current_active_user)):
     return current_user
+
+
+@me.delete('/delete')
+async def delete_user(current_user: User = Depends(get_current_user)):
+    if not delete_user_from_db_by_login(db, current_user.username):
+        raise HTTPException(
+            status_code=status.HTTP_417_EXPECTATION_FAILED,
+            detail="User wasn't found in db > It cant be removed or already removed"
+        )
+    return {"Status": "User was successfully removed from the system", "User": User}
+
+
+@user.post('/new', response_model=UserReg)
+async def create_new_user(user: UserInDB):
+    plain_password = user.password.get_secret_value()
+    user.password = get_password_hash(plain_password)
+    if check_that_user_in_db(user.email):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User with this email already exists"
+        )
+    if check_that_user_in_db(user.email):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User with this username already exists"
+        )
+    if not insert_user_to_db(db, user):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Problems with DB. Contact technical support"
+        )
+    async with aiohttp.ClientSession() as session:
+        url = "http://localhost:8088/api/v1/user/token"
+        token = await post_async(
+            url, session, body={
+                'username': user.username,
+                'password': plain_password
+            }
+        )
+    return {'status': Status.successful, 'data': Data(token=token, user=user)}

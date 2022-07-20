@@ -7,7 +7,7 @@ from psycopg2.extras import DictCursor
 from pydantic import PositiveInt, EmailStr
 
 from config import cfgparser
-from core.schemas.user import username
+from core.schemas.user import username, UserInDB
 
 
 class DataBase:
@@ -96,7 +96,31 @@ class Postgres(DataBase):
         result = self._execute(
             f"""
             SELECT username, password, email, first_name, last_name, date_of_birth FROM accounts 
-            WHERE username = '{login}' OR email = '{login}'
+            WHERE username = '{login}' OR email = '{login}';
+            """,
+            fetch_one=True
+        )
+        return result
+
+    def delete_user_from_table_accounts(self, login: Union[username, EmailStr]):
+        result = self._execute(
+            f"""
+            DELETE FROM accounts WHERE username = '{login}' or email = '{login}'
+            (select_list | *);
+            """,
+            fetch_one=True
+        )
+        return result
+
+    def insert_user_to_table_accounts(self, user: UserInDB):
+        user_dict = user.dict().items()
+        result = self._execute(
+            f"""
+            INSERT INTO accounts
+            ({", ".join(map(lambda x: f'"{x}"', [key for key, value in user_dict if value]))})
+            VALUES
+            ({", ".join(map(lambda x: f"'{x}'", [value for key, value in user_dict if value]))})
+            RETURNING user_id;
             """,
             fetch_one=True
         )
@@ -106,3 +130,14 @@ class Postgres(DataBase):
 def get_user_from_db_by_login(db: Postgres, login: Union[username, EmailStr]) -> psycopg2._psycopg.cursor.fetchone:
     result = db.select_user_from_table_accounts(login)
     return dict(result) if result else None
+
+
+def delete_user_from_db_by_login(db: Postgres, login: Union[username, EmailStr]) -> psycopg2._psycopg.cursor.fetchone:
+    result = db.delete_user_from_table_accounts(login)
+    print(result)
+    return dict(result) if result else None
+
+
+def insert_user_to_db(db: Postgres, user: UserInDB):
+    result = db.insert_user_to_table_accounts(user)
+    return result
