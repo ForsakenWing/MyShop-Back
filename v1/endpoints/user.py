@@ -1,28 +1,39 @@
 from datetime import datetime, timedelta
 from typing import Union
 
-import aiohttp
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Header, Body
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import EmailStr
 
 from config import cfgparser
-from core import Postgres, User, UserInDB, Token, username, TokenData, APIRouter
-from core import delete_user_from_db_by_login, insert_user_to_db, UserReg, Status, Data
-from core import post_async
+from core import Postgres, User, UserInDB, Token, username, TokenUser, APIRouter, get_user_from_db_by_login
+from core import delete_user_from_db_by_login, insert_user_to_db, UserReg, Status, Data, Validators
 
 user = APIRouter(
     prefix="/user"
 )
-
 parser = cfgparser('v1.ini', 'Secrets')
 db = Postgres()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="token", description="Bearer token to perform privileged actions"
+    tokenUrl="api/v1/user/token", description="Bearer token to perform privileged actions",
 )
+
+auth_header = Header(
+    alias="Authorization",
+    description="Replace {token} with your token to execute this query",
+    example="Bearer {token}"
+)
+
+
+async def verify_auth_header(header: str = auth_header):
+    if header is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header is missing"
+        )
 
 
 def verify_password(plain_password: str, hashed_password):
@@ -33,22 +44,21 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-def check_that_user_in_db(login: Union[EmailStr, username]):
-    from core import get_user_from_db_by_login
-    user_in_db = get_user_from_db_by_login(db, login)
-    return UserInDB(**user_in_db) if user_in_db else None
+def check_that_user_in_db(login: Union[EmailStr, username]) -> UserInDB | None:
+    user = get_user_from_db_by_login(db, login)
+    return UserInDB(**dict(user)) if user else None
 
 
-def authenticate_user(login: str, password: str) -> UserInDB | None:
+def authenticate_user(login: str, plain_password: str) -> UserInDB | bool:
     user = check_that_user_in_db(login)
     if not user:
         return False
-    if not verify_password(password, user.password.get_secret_value()):
+    if not verify_password(plain_password, user.password):
         return False
     return user
 
 
-def create_access_token(data: dict, expires_delta: timedelta | None):
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -59,7 +69,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None):
     return encoded_jwt
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserInDB:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -67,26 +77,40 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     )
     try:
         payload = jwt.decode(token, parser.get('secret_key'))
-        subject: str = payload.get("sub")
-        if subject is None:
+        username: str = payload.get("sub")
+        if username is None:
             raise credentials_exception
-        token_data = TokenData(login=subject)
+        token_user = TokenUser(username=username)
     except JWTError:
         raise credentials_exception
-    user_in_db = check_that_user_in_db(login=token_data.login)
-    if user_in_db is None:
+    user = check_that_user_in_db(login=token_user.username)
+    if user is None:
         raise credentials_exception
-    return user_in_db
+    return user
 
 
-async def get_current_active_user(current_user: User = Depends(get_current_user)):
+async def get_current_active_user(current_user: UserInDB = Depends(get_current_user)):
     if not current_user.active:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
 
-@user.post("/token", response_model=Token)
+@user.post(
+    "/token",
+    response_model=Token,
+    tags=['user'],
+    response_description="Token to do privileged actions. Put it to your header in format:"
+                         " 'Authorization: Bearer {token}'"
+)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    """
+    Authenticate user using username and password
+
+    - **username**: unique user identifier (Could be both email or login)
+    - **password**: just password
+
+    return **token**
+    """
     user = authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -106,46 +130,41 @@ me = APIRouter(
 )
 
 
-@me.get("/", response_model=User)
+@me.get("/", response_model=User, dependencies=[Depends(verify_auth_header)], tags=['user'])
 async def get_user_data(current_user: User = Depends(get_current_active_user)):
     return current_user
 
 
-@me.delete('/delete')
-async def delete_user(current_user: User = Depends(get_current_user)):
+@me.delete(
+    '/delete',
+    dependencies=[Depends(verify_auth_header)],
+    tags=['user'],
+    response_description='Successful removing',
+)
+async def delete_user(current_user: UserInDB = Depends(get_current_user)):
     if not delete_user_from_db_by_login(db, current_user.username):
         raise HTTPException(
             status_code=status.HTTP_417_EXPECTATION_FAILED,
-            detail="User wasn't found in db > It cant be removed or already removed"
+            detail="User wasn't found in db > It can't be removed or already removed"
         )
-    return {"Status": "User was successfully removed from the system", "User": User}
+    return {"Status": "Successful removing"}
 
 
-@user.post('/new', response_model=UserReg)
+@user.post(
+    '/new',
+    response_model=UserReg,
+    status_code=status.HTTP_201_CREATED,
+    tags=['user'],
+    response_description='Successful user creation'
+)
+@Validators.user_exists
 async def create_new_user(user: UserInDB):
-    plain_password = user.password.get_secret_value()
-    user.password = get_password_hash(plain_password)
-    if check_that_user_in_db(user.email):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User with this email already exists"
-        )
-    if check_that_user_in_db(user.email):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User with this username already exists"
-        )
+    user_credentials = user.copy()
+    user.password = get_password_hash(user.password)
     if not insert_user_to_db(db, user):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Problems with DB. Contact technical support"
         )
-    async with aiohttp.ClientSession() as session:
-        url = "http://localhost:8088/api/v1/user/token"
-        token = await post_async(
-            url, session, body={
-                'username': user.username,
-                'password': plain_password
-            }
-        )
+    token: Token = await login_for_access_token(user_credentials)
     return {'status': Status.successful, 'data': Data(token=token, user=user)}

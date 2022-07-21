@@ -106,7 +106,7 @@ class Postgres(DataBase):
         result = self._execute(
             f"""
             DELETE FROM accounts WHERE username = '{login}' or email = '{login}'
-            (select_list | *);
+            RETURNING *;
             """,
             fetch_one=True
         )
@@ -129,12 +129,11 @@ class Postgres(DataBase):
 
 def get_user_from_db_by_login(db: Postgres, login: Union[username, EmailStr]) -> psycopg2._psycopg.cursor.fetchone:
     result = db.select_user_from_table_accounts(login)
-    return dict(result) if result else None
+    return result
 
 
 def delete_user_from_db_by_login(db: Postgres, login: Union[username, EmailStr]) -> psycopg2._psycopg.cursor.fetchone:
     result = db.delete_user_from_table_accounts(login)
-    print(result)
     return dict(result) if result else None
 
 

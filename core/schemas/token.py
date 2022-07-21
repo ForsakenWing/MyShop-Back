@@ -6,5 +6,5 @@ class Token(BaseModel):
     token_type: str
 
 
-class TokenData(BaseModel):
-    login: str | None
+class TokenUser(BaseModel):
+    username: str | None

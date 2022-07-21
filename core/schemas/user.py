@@ -1,8 +1,8 @@
 from datetime import date
 from enum import Enum
-from typing import NewType, Literal, Union
+from typing import NewType
 
-from pydantic import BaseModel, Field, EmailStr, SecretStr
+from pydantic import BaseModel, Field, EmailStr
 
 from core.schemas.token import Token
 
@@ -26,8 +26,9 @@ class User(BaseModel):
 
 
 class UserInDB(User):
-    password: SecretStr = Field(
-        title="Password which will be to authorize/identify user", max_length=500, min_length=8
+    password: str = Field(
+        title="password field", max_length=500,
+        min_length=8, description="min_length=8, max_length=500 (Only hash will be saved)"
     )
 
 
