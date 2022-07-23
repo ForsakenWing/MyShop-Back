@@ -6,10 +6,8 @@ def main():
     Postgres.create_tables()
     run(
         app="v1.api:app",
-        host="localhost",
+        host="0.0.0.0",
         port=8088,
-        reload=True,
-        debug=True,
         use_colors=True
     )
 
