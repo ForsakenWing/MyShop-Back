@@ -73,6 +73,7 @@ disable=C0114,
         C0103,
         C0103,
         C0116,
+        C0116,
         C0116
 
 # Enable the message, report, category or checker with the given id(s). You can
