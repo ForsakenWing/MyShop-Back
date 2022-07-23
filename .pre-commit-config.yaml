@@ -11,4 +11,5 @@ repos:
           "--rcfile=dependencies/app.pylintrc",
           "-rn", # Only display messages
           "-sn", # Don't display the score
+          "--fail-under=7"
         ]
