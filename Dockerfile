@@ -1,28 +1,34 @@
-FROM python:3.10
+FROM python:3.10-alpine as build
+
+WORKDIR /opt/
+
+
+COPY dependencies/requirements.txt /tmp/
+
+RUN apk update && \
+    apk add build-base
+
+RUN python -m venv .venv && \
+    .venv/bin/python -m pip install --upgrade pip && \
+    .venv/bin/pip install -U setuptools wheel && \
+    .venv/bin/pip install -r /tmp/requirements.txt && \
+    .venv/bin/pip cache purge
+
+FROM python:3.10-alpine
 
 EXPOSE 8088
 
-# Keeps Python from generating .pyc files in the container
-ENV PYTHONDONTWRITEBYTECODE=1
-
-# Turns off buffering for easier container logging
 ENV PYTHONUNBUFFERED=1
 
-# Install pip requirements
-ENV VIRTUAL_ENV=/opt/venv
-RUN python3 -m venv $VIRTUAL_ENV
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-COPY dependencies/requirements.txt .
-RUN python -m pip install --upgrade pip
-RUN python -m pip install -r requirements.txt
+COPY --from=build /opt/.venv /.venv
+COPY src /src
 
-COPY . /v1
-COPY . /core
-COPY . /configs
+ENV PATH="$PATH:/.venv"
+ENV PYTHONPATH="/"
 
-WORKDIR /v1
+WORKDIR /src
 
-RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /v1
+RUN adduser -u 5678 --disabled-password --gecos "" appuser && chown -R appuser /src
 USER appuser
 
-CMD ["python", "main.py"]
+CMD ["/.venv/bin/python", "main.py"]

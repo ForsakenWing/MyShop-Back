@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from core import APIRouter
+from src.core import APIRouter
 
 from .endpoints import user, me
 

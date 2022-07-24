@@ -6,8 +6,8 @@ import psycopg2
 from psycopg2.extras import DictCursor
 from pydantic import PositiveInt, EmailStr
 
-from config import cfgparser
-from core.schemas.user import username, UserInDB
+from src.config import cfgparser
+from src.core.schemas.user import username, UserInDB
 
 
 class DataBase:
