@@ -7,9 +7,9 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import EmailStr
 
-from config import cfgparser
-from core import Postgres, User, UserInDB, Token, username, TokenUser, APIRouter, get_user_from_db_by_login
-from core import delete_user_from_db_by_login, insert_user_to_db, UserReg, Status, Data, Validators
+from src.config import cfgparser
+from src.core import Postgres, User, UserInDB, Token, username, TokenUser, APIRouter, get_user_from_db_by_login
+from src.core import delete_user_from_db_by_login, insert_user_to_db, UserReg, Status, Data, Validators
 
 user = APIRouter(
     prefix="/user"

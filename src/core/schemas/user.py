@@ -4,7 +4,7 @@ from typing import NewType
 
 from pydantic import BaseModel, Field, EmailStr
 
-from core.schemas.token import Token
+from src.core.schemas.token import Token
 
 
 class User(BaseModel):

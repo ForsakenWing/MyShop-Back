@@ -1,6 +1,6 @@
-from core import UserInDB, Postgres
+from src.core import UserInDB, Postgres
 from fastapi import HTTPException, status
-from core import get_user_from_db_by_login
+from src.core import get_user_from_db_by_login
 from functools import wraps
 
 
