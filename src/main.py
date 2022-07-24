@@ -1,5 +1,5 @@
 from uvicorn import run
-from core import Postgres
+from src.core import Postgres
 
 
 def main():
