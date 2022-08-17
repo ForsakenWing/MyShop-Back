@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Union
 
-from fastapi import Depends, HTTPException, status, Header, Body
+from fastapi import Depends, HTTPException, status, Header
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -49,8 +49,8 @@ def check_that_user_in_db(login: Union[EmailStr, username]) -> UserInDB | None:
     return UserInDB(**dict(user)) if user else None
 
 
-def authenticate_user(login: str, plain_password: str) -> UserInDB | bool:
-    user = check_that_user_in_db(login)
+def authenticate_user(login, plain_password: str) -> UserInDB | bool:
+    user = check_that_user_in_db(login=login)
     if not user:
         return False
     if not verify_password(plain_password, user.password):
