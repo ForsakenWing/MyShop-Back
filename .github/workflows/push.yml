@@ -1,4 +1,4 @@
-name: Pylint
+name: Lint and test application
 
 on: [push]
 
@@ -18,8 +18,13 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install pylint
+        pip install docker-compose
         pip install -r dependencies/requirements.txt
     - name: Analysing the code with pylint
+      run: pylint src --rcfile=dependencies/app.pylintrc --fail-under=7
+    - name: Test application
       run: |
-        pylint src --rcfile=dependencies/app.pylintrc --fail-under=7
-        pylint tests --rcfile=dependencies/tests.pylintrc --fail-under=8
+        docker-compose build
+        docker-compose up -d
+        docker exec $(docker ps | grep myshop-back_auth_service | awk '{print $1}') \
+        /.venv/bin/python -m pytest --disable-warnings /tests/

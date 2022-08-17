@@ -19,9 +19,11 @@ FROM python:3.10-alpine
 EXPOSE 8088
 
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
 
 COPY --from=build /opt/.venv /.venv
 COPY src /src
+COPY tests /tests
 
 ENV PATH="$PATH:/.venv"
 ENV PYTHONPATH="/"
