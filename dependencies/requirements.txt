@@ -69,3 +69,4 @@ yarl==1.7.2
 pytest==7.1.2
 Faker==14.1.0
 behave==1.2.6
+pytest==7.1.2
