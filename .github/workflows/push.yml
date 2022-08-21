@@ -26,5 +26,6 @@ jobs:
       run: |
         docker-compose build
         docker-compose up -d
-        docker exec $(docker ps | grep myshop-back_auth_service | awk '{print $1}') \
-        /.venv/bin/python -m pytest --disable-warnings /tests/
+        myshop=$(docker ps | grep myshop-back_auth_service | awk '{print $1}')
+        docker exec $myshop /.venv/bin/python -m pytest --disable-warnings /tests/ && \
+        docker exec $myshop /.venv/bin/python -m behave 
