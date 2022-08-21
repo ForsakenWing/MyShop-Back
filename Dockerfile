@@ -24,6 +24,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 COPY --from=build /opt/.venv /.venv
 COPY src /src
 COPY tests /tests
+COPY features /src/
 
 ENV PATH="$PATH:/.venv"
 ENV PYTHONPATH="/"
