@@ -21,6 +21,7 @@ def get_valid_user_data(context):
 @when('Send request to api/v1/user/new endpoint')
 def create_user(context):
     global user_data, response
+    user_data = get_valid_user_data(context)
     response = request(
         method="post",
         url=f"{url}/api/v1/user/new",

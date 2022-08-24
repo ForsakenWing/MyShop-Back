@@ -9,7 +9,10 @@ services:
    context: .
   volumes:
    - ./:/v1
-  network_mode: host
+  ports:
+   - "8088:8088"
+  links:
+   - postgres
  postgres:
   image: postgres
   restart: on-failure

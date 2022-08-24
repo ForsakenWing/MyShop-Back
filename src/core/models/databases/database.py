@@ -5,8 +5,8 @@ from src.config import cfgparser
 
 
 CONFIG = cfgparser()
-username, password, db_name = CONFIG['user'], CONFIG['password'], CONFIG['dbname']
-SQLALCHEMY_DATABASE_URL = f"postgresql://{username}:{password}@localhost/{db_name}"
+username, password, db_name, hostname = CONFIG['user'], CONFIG['password'], CONFIG['dbname'], CONFIG['hostname']
+SQLALCHEMY_DATABASE_URL = f"postgresql://{username}:{password}@{hostname}/{db_name}"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL
