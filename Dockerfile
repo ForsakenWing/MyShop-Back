@@ -14,7 +14,7 @@ RUN python -m venv .venv && \
     .venv/bin/pip install -r /tmp/requirements.txt && \
     .venv/bin/pip cache purge
 
-FROM python:3.10-alpine
+FROM python:3.10-alpine as dev
 
 EXPOSE 8088
 

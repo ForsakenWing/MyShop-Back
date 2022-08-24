@@ -9,15 +9,14 @@ services:
    context: .
   ports:
   - "8088:8088"
-  links:
-   - postgres
   volumes:
    - ./:/v1
+  network_mode: host
  postgres:
   image: postgres
   restart: on-failure
   ports:
-  - "5433:5432"
+  - "5432:5432"
   env_file:
   - src/configs/database-cfg.env
   volumes:
