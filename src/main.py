@@ -1,9 +1,9 @@
 from uvicorn import run
-from src.core import Postgres
+from src.core import Base, engine
 
 
 def main():
-    Postgres.create_tables()
+    Base.metadata.create_all(bind=engine)
     run(
         app="v1.api:app",
         host="0.0.0.0",

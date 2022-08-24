@@ -7,17 +7,17 @@ services:
    - postgres
   build:
    context: .
-  ports:
-  - "8088:8088"
-  links:
-   - postgres
   volumes:
    - ./:/v1
+  ports:
+   - "8088:8088"
+  links:
+   - postgres
  postgres:
   image: postgres
   restart: on-failure
   ports:
-  - "5433:5432"
+  - "5432:5432"
   env_file:
   - src/configs/database-cfg.env
   volumes:

@@ -1,6 +1,5 @@
 from datetime import date
 from enum import Enum
-from typing import NewType
 
 from pydantic import BaseModel, Field, EmailStr
 
@@ -19,7 +18,7 @@ class User(BaseModel):
     last_name: str = Field(
         default=None, min_length=3, max_length=150
     )
-    active: bool = Field(
+    is_active: bool = Field(
         default=True, title="Status of user activity",
         description="False == DEAD & Inactive user > He will be deleted soon"
     )
@@ -30,6 +29,9 @@ class UserInDB(User):
         title="password field", max_length=500,
         min_length=8, description="min_length=8, max_length=500 (Only hash will be saved)"
     )
+
+    class Config:
+        orm_mode = True
 
 
 class Data(BaseModel):
@@ -47,6 +49,3 @@ class Status(str, Enum):
 class UserReg(BaseModel):
     status: Status
     data: Data
-
-
-username = NewType("username", str)

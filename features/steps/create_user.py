@@ -2,7 +2,6 @@ from behave import given, when, then
 from faker import Faker
 from requests import request
 
-
 fake = Faker()
 url = "http://0.0.0.0:8088"
 
@@ -21,6 +20,7 @@ def get_valid_user_data(context):
 
 @when('Send request to api/v1/user/new endpoint')
 def create_user(context):
+    global user_data, response
     user_data = get_valid_user_data(context)
     response = request(
         method="post",
@@ -28,12 +28,10 @@ def create_user(context):
         json=user_data
     )
     del user_data['password']
-    return response, user_data
 
 
 @then('User successfully created')
 def assert_that_user_successfully_created(context):
-    response, user_data = create_user(context)
     for key in user_data:
         assert response.json()['data']['user'][key] == user_data[key]
     assert response.status_code == 201
